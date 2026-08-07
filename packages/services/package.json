@@ -1,0 +1,27 @@
+{
+  "name": "@repo/services",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "check-types": "tsc --noEmit",
+    "lint": "eslint ."
+  },
+  "exports": {
+    ".": "./index.ts",
+    "./user": "./user/index.ts"
+  },
+  "dependencies": {
+    "@repo/database": "workspace:*",
+    "argon2": "^0.45.1",
+    "jsonwebtoken": "^9.0.3",
+    "zod": "^4.4.3"
+  },
+  "devDependencies": {
+    "@repo/typescript-config": "workspace:*",
+    "@repo/eslint-config": "workspace:*",
+    "@types/jsonwebtoken": "^9.0.10",
+    "@types/node": "^26.1.2",
+    "eslint": "^10.8.0",
+    "typescript": "5.9.3"
+  }
+}

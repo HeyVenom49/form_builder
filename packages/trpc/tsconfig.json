@@ -1,0 +1,9 @@
+{
+  "extends": "@repo/typescript-config/node.json",
+  "compilerOptions": {
+    "declaration": false,
+    "declarationMap": false
+  },
+  "include": ["server/**/*.ts", "client/**/*.ts"],
+  "exclude": ["node_modules"]
+}
