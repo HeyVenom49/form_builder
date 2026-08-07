@@ -1,159 +1,163 @@
-# Turborepo starter
+# Form Builder
 
-This Turborepo starter is maintained by the Turborepo core team.
+A TypeScript monorepo for building, sharing, and collecting responses from dynamic forms — similar in spirit to Typeform / Google Forms.
 
-## Using this example
-
-Run the following command:
-
-```sh
-npx create-turbo@latest
-```
+Package manager: **Bun**. Monorepo tooling: **Turborepo**.
 
 ## What's inside?
 
-This Turborepo includes the following packages/apps:
+### Apps
 
-### Apps and Packages
+| App | Role |
+|-----|------|
+| `apps/web` | Next.js frontend |
+| `apps/api` | API server |
 
-- `docs`: a [Next.js](https://nextjs.org/) app
-- `web`: another [Next.js](https://nextjs.org/) app
-- `@repo/ui`: a stub React component library shared by both `web` and `docs` applications
-- `@repo/eslint-config`: `eslint` configurations (includes `eslint-config-next` and `eslint-config-prettier`)
-- `@repo/typescript-config`: `tsconfig.json`s used throughout the monorepo
+### Packages
 
-Each package/app is 100% [TypeScript](https://www.typescriptlang.org/).
+| Package | Role |
+|---------|------|
+| `@repo/database` | PostgreSQL schema (Drizzle ORM), migrations, DB client |
+| `@repo/trpc` | Shared tRPC setup |
+| `@repo/services` | Domain services — **WIP / incomplete** |
+| `@repo/eslint-config` | Shared ESLint config |
+| `@repo/typescript-config` | Shared TypeScript config |
 
-### Utilities
+---
 
-This Turborepo has some additional tools already setup for you:
+## Database (`@repo/database`)
 
-- [TypeScript](https://www.typescriptlang.org/) for static type checking
-- [ESLint](https://eslint.org/) for code linting
-- [Prettier](https://prettier.io) for code formatting
+Schema, enums, relations, and the first migration are in place.
 
-### Build
+### Stack
 
-To build all apps and packages, run the following command:
+- **Drizzle ORM** + **drizzle-kit**
+- **PostgreSQL** (`pg`)
+- Soft deletes, timezone-aware timestamps, and Drizzle relational queries
 
-With [global `turbo`](https://turborepo.dev/docs/getting-started/installation#global-installation) installed (recommended):
+### Setup
+
+1. Copy / set root `.env` with `DATABASE_URL`.
+2. From `packages/database`:
 
 ```sh
-cd my-turborepo
-turbo build
+bun db:generate   # generate SQL from schema
+bun db:migrate    # apply migrations
+bun run dev       # Drizzle Studio
 ```
 
-Without global `turbo`, use your package manager:
+> **Note (external volumes / macOS):** AppleDouble `._*` files can break `db:generate` (`"Ma"... is not valid JSON`). Clean them first:
 
 ```sh
-cd my-turborepo
-npx turbo build
-bun dlx turbo build
-bun exec turbo build
+./cleanDotFile.sh packages/database
 ```
 
-You can build a specific package by using a [filter](https://turborepo.dev/docs/crafting-your-repository/running-tasks#using-filters):
+### Schema overview
 
-With [global `turbo`](https://turborepo.dev/docs/getting-started/installation#global-installation) installed:
-
-```sh
-turbo build --filter=docs
+```
+users
+ ├── accounts          (CREDENTIALS / GOOGLE / GITHUB)
+ ├── sessions
+ ├── auth_tokens        (EMAIL_VERIFICATION / PASSWORD_RESET)
+ ├── themes
+ └── forms
+      ├── form_settings
+      ├── form_collaborators   (EDITOR / VIEWER)
+      ├── sections
+      │    └── questions
+      │         ├── question_options
+      │         └── (logic source / target)
+      ├── logic_rules
+      ├── responses
+      │    └── answers
+      ├── files
+      ├── analytics_events
+      ├── share_links
+      ├── webhooks
+      │    └── webhook_deliveries
+      └── templates (snapshot JSON + optional sourceFormId)
 ```
 
-Without global `turbo`:
+### Tables (20)
+
+| Area | Tables |
+|------|--------|
+| Auth | `users`, `accounts`, `sessions`, `auth_tokens` |
+| Forms | `forms`, `form_settings`, `form_collaborators`, `sections`, `questions`, `question_options`, `logic_rules` |
+| Responses | `responses`, `answers`, `files` |
+| Product | `themes`, `templates`, `share_links` |
+| Ops | `analytics_events`, `webhooks`, `webhook_deliveries` |
+
+### Key design choices
+
+- **Auth split:** identity on `users`; passwords / OAuth tokens on `accounts`
+- **Templates:** store a **JSON snapshot** (not a live form FK that cascades away)
+- **Logic rules:** typed targets (`QUESTION` / `SECTION` / `FORM_END`) with a DB `CHECK` constraint
+- **Answers:** unique `(responseId, questionId)`; question delete is `RESTRICT` to protect history
+- **Soft-delete-safe uniques:** active email / username indexes on `users`
+- **Relations:** full Drizzle `relations()` graph in `schema/relations.ts` for `db.query.*`
+
+### Enums (selected)
+
+| Enum | Values (summary) |
+|------|------------------|
+| `form_status` | `DRAFT`, `PUBLISHED`, `ARCHIVED`, `CLOSED` |
+| `question_type` | text, choice, upload, rating, grids, … |
+| `response_status` | `STARTED`, `COMPLETED`, `ABANDONED`, `PARTIAL` |
+| `logic_operator` / `logic_action` | equals/contains/… · show/hide/jump/require/skip |
+| `analytics_event` | form/question lifecycle + `FOCUS` / `BLUR` |
+| `file_provider` | `LOCAL`, `S3`, `R2`, `CLOUDINARY`, `SUPABASE` |
+| `theme_mode` | `LIGHT`, `DARK`, `SYSTEM` (on `users`) |
+| `webhook_status` | `ACTIVE`, `DISABLED` |
+| `collaborator_role` | `EDITOR`, `VIEWER` |
+| `auth_token_type` | `EMAIL_VERIFICATION`, `PASSWORD_RESET` |
+| `webhook_delivery_status` | `PENDING`, `SUCCESS`, `FAILED` |
+
+Source of truth: `packages/database/schema/` · barrel: `packages/database/schema.ts`  
+Initial migration: `packages/database/drizzle/0000_silent_triathlon.sql`
+
+### Intentionally deferred
+
+- Audit log table
+- In-app notifications table  
+  (add when collab / alerts UI starts; email + webhooks cover MVP)
+
+---
+
+## Monorepo scripts
+
+From the repo root:
 
 ```sh
-npx turbo build --filter=docs
-bun exec turbo build --filter=docs
-bun exec turbo build --filter=docs
+bun install
+bun run dev          # turbo dev
+bun run build
+bun run lint
+bun run check-types
+bun run format
 ```
 
-### Develop
-
-To develop all apps and packages, run the following command:
-
-With [global `turbo`](https://turborepo.dev/docs/getting-started/installation#global-installation) installed (recommended):
+Filter an app/package:
 
 ```sh
-cd my-turborepo
-turbo dev
-```
-
-Without global `turbo`, use your package manager:
-
-```sh
-cd my-turborepo
-npx turbo dev
-bun exec turbo dev
-bun exec turbo dev
-```
-
-You can develop a specific package by using a [filter](https://turborepo.dev/docs/crafting-your-repository/running-tasks#using-filters):
-
-With [global `turbo`](https://turborepo.dev/docs/getting-started/installation#global-installation) installed:
-
-```sh
-turbo dev --filter=web
-```
-
-Without global `turbo`:
-
-```sh
-npx turbo dev --filter=web
 bun exec turbo dev --filter=web
-bun exec turbo dev --filter=web
+bun exec turbo check-types --filter=@repo/database
 ```
 
-### Remote Caching
+---
 
-> [!TIP]
-> Vercel Remote Cache is free for all plans. Get started today at [vercel.com](https://vercel.com/signup?utm_source=remote-cache-sdk&utm_campaign=free_remote_cache).
+## Status
 
-Turborepo can use a technique known as [Remote Caching](https://turborepo.dev/docs/core-concepts/remote-caching) to share cache artifacts across machines, enabling you to share build caches with your team and CI/CD pipelines.
+| Area | Status |
+|------|--------|
+| Database schema + relations + migration | Done |
+| Services layer | Incomplete — not documented yet |
+| API / web product features | In progress |
 
-By default, Turborepo will cache locally. To enable Remote Caching you will need an account with Vercel. If you don't have an account you can [create one](https://vercel.com/signup?utm_source=turborepo-examples), then enter the following commands:
+---
 
-With [global `turbo`](https://turborepo.dev/docs/getting-started/installation#global-installation) installed (recommended):
+## Useful links
 
-```sh
-cd my-turborepo
-turbo login
-```
-
-Without global `turbo`, use your package manager:
-
-```sh
-cd my-turborepo
-npx turbo login
-bun exec turbo login
-bun exec turbo login
-```
-
-This will authenticate the Turborepo CLI with your [Vercel account](https://vercel.com/docs/concepts/personal-accounts/overview).
-
-Next, you can link your Turborepo to your Remote Cache by running the following command from the root of your Turborepo:
-
-With [global `turbo`](https://turborepo.dev/docs/getting-started/installation#global-installation) installed:
-
-```sh
-turbo link
-```
-
-Without global `turbo`:
-
-```sh
-npx turbo link
-bun exec turbo link
-bun exec turbo link
-```
-
-## Useful Links
-
-Learn more about the power of Turborepo:
-
-- [Tasks](https://turborepo.dev/docs/crafting-your-repository/running-tasks)
-- [Caching](https://turborepo.dev/docs/crafting-your-repository/caching)
-- [Remote Caching](https://turborepo.dev/docs/core-concepts/remote-caching)
-- [Filtering](https://turborepo.dev/docs/crafting-your-repository/running-tasks#using-filters)
-- [Configuration Options](https://turborepo.dev/docs/reference/configuration)
-- [CLI Usage](https://turborepo.dev/docs/reference/command-line-reference)
+- [Drizzle ORM](https://orm.drizzle.team/)
+- [Turborepo](https://turborepo.dev/docs)
+- [Bun](https://bun.sh/docs)
