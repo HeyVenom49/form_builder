@@ -8,20 +8,19 @@ Package manager: **Bun**. Monorepo tooling: **Turborepo**.
 
 ### Apps
 
-| App | Role |
-|-----|------|
+| App        | Role             |
+| ---------- | ---------------- |
 | `apps/web` | Next.js frontend |
-| `apps/api` | API server |
+| `apps/api` | API server       |
 
 ### Packages
 
-| Package | Role |
-|---------|------|
-| `@repo/database` | PostgreSQL schema (Drizzle ORM), migrations, DB client |
-| `@repo/trpc` | Shared tRPC setup |
-| `@repo/services` | Domain services — **WIP / incomplete** |
-| `@repo/eslint-config` | Shared ESLint config |
-| `@repo/typescript-config` | Shared TypeScript config |
+| Package                   | Role                                                   |
+| ------------------------- | ------------------------------------------------------ |
+| `@repo/database`          | PostgreSQL schema (Drizzle ORM), migrations, DB client |
+| `@repo/trpc`              | Shared tRPC setup                                      |
+| `@repo/eslint-config`     | Shared ESLint config                                   |
+| `@repo/typescript-config` | Shared TypeScript config                               |
 
 ---
 
@@ -43,8 +42,14 @@ Schema, enums, relations, and the first migration are in place.
 ```sh
 bun db:generate   # generate SQL from schema
 bun db:migrate    # apply migrations
-bun run dev       # Drizzle Studio
+bun db:seed       # create local test user
+bun db:studio     # Drizzle Studio
 ```
+
+Test login after seed:
+
+- **email:** `demo@demo.com`
+- **password:** `Test1234!`
 
 > **Note (external volumes / macOS):** AppleDouble `._*` files can break `db:generate` (`"Ma"... is not valid JSON`). Clean them first:
 
@@ -80,13 +85,13 @@ users
 
 ### Tables (20)
 
-| Area | Tables |
-|------|--------|
-| Auth | `users`, `accounts`, `sessions`, `auth_tokens` |
-| Forms | `forms`, `form_settings`, `form_collaborators`, `sections`, `questions`, `question_options`, `logic_rules` |
-| Responses | `responses`, `answers`, `files` |
-| Product | `themes`, `templates`, `share_links` |
-| Ops | `analytics_events`, `webhooks`, `webhook_deliveries` |
+| Area      | Tables                                                                                                     |
+| --------- | ---------------------------------------------------------------------------------------------------------- |
+| Auth      | `users`, `accounts`, `sessions`, `auth_tokens`                                                             |
+| Forms     | `forms`, `form_settings`, `form_collaborators`, `sections`, `questions`, `question_options`, `logic_rules` |
+| Responses | `responses`, `answers`, `files`                                                                            |
+| Product   | `themes`, `templates`, `share_links`                                                                       |
+| Ops       | `analytics_events`, `webhooks`, `webhook_deliveries`                                                       |
 
 ### Key design choices
 
@@ -99,19 +104,19 @@ users
 
 ### Enums (selected)
 
-| Enum | Values (summary) |
-|------|------------------|
-| `form_status` | `DRAFT`, `PUBLISHED`, `ARCHIVED`, `CLOSED` |
-| `question_type` | text, choice, upload, rating, grids, … |
-| `response_status` | `STARTED`, `COMPLETED`, `ABANDONED`, `PARTIAL` |
+| Enum                              | Values (summary)                                |
+| --------------------------------- | ----------------------------------------------- |
+| `form_status`                     | `DRAFT`, `PUBLISHED`, `ARCHIVED`, `CLOSED`      |
+| `question_type`                   | text, choice, upload, rating, grids, …          |
+| `response_status`                 | `STARTED`, `COMPLETED`, `ABANDONED`, `PARTIAL`  |
 | `logic_operator` / `logic_action` | equals/contains/… · show/hide/jump/require/skip |
-| `analytics_event` | form/question lifecycle + `FOCUS` / `BLUR` |
-| `file_provider` | `LOCAL`, `S3`, `R2`, `CLOUDINARY`, `SUPABASE` |
-| `theme_mode` | `LIGHT`, `DARK`, `SYSTEM` (on `users`) |
-| `webhook_status` | `ACTIVE`, `DISABLED` |
-| `collaborator_role` | `EDITOR`, `VIEWER` |
-| `auth_token_type` | `EMAIL_VERIFICATION`, `PASSWORD_RESET` |
-| `webhook_delivery_status` | `PENDING`, `SUCCESS`, `FAILED` |
+| `analytics_event`                 | form/question lifecycle + `FOCUS` / `BLUR`      |
+| `file_provider`                   | `LOCAL`, `S3`, `R2`, `CLOUDINARY`, `SUPABASE`   |
+| `theme_mode`                      | `LIGHT`, `DARK`, `SYSTEM` (on `users`)          |
+| `webhook_status`                  | `ACTIVE`, `DISABLED`                            |
+| `collaborator_role`               | `EDITOR`, `VIEWER`                              |
+| `auth_token_type`                 | `EMAIL_VERIFICATION`, `PASSWORD_RESET`          |
+| `webhook_delivery_status`         | `PENDING`, `SUCCESS`, `FAILED`                  |
 
 Source of truth: `packages/database/schema/` · barrel: `packages/database/schema.ts`  
 Initial migration: `packages/database/drizzle/0000_silent_triathlon.sql`
@@ -148,11 +153,11 @@ bun exec turbo check-types --filter=@repo/database
 
 ## Status
 
-| Area | Status |
-|------|--------|
-| Database schema + relations + migration | Done |
-| Services layer | Incomplete — not documented yet |
-| API / web product features | In progress |
+| Area                                    | Status                          |
+| --------------------------------------- | ------------------------------- |
+| Database schema + relations + migration | Done                            |
+| Services layer                          | Incomplete — not documented yet |
+| API / web product features              | In progress                     |
 
 ---
 

@@ -4,7 +4,7 @@ import {
   type TRPCLink,
 } from "@trpc/client";
 import type { AnyRouter } from "@trpc/server";
-import { env } from "../env.js";
+import { env } from "../env";
 
 interface CreateHttpBatchLinkClientClientOpts {
   enableStreaming?: boolean;
@@ -16,11 +16,11 @@ export const createHttpBatchLinkClientClient = (
   const link = opts?.enableStreaming ? httpBatchStreamLink : httpBatchLink;
 
   return link({
-    url: env.NEXT_PUBLIC_API_URL ?? "http://localhost:3000",
+    url: env.NEXT_PUBLIC_API_URL,
     fetch(url, options) {
       return fetch(url, {
         ...options,
-        // credentials: "include",
+        credentials: "include",
       });
     },
   });

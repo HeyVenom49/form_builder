@@ -1,3 +1,21 @@
-import UserService from "@repo/services/user";
+import AuthService from "@repo/services/auth";
+import FormService from "@repo/services/form";
+import ResponseService from "@repo/services/response";
+import ShareLinkService from "@repo/services/share-link";
+import CollaboratorService from "@repo/services/collaborator";
+import WebhookService from "@repo/services/webhook";
+import ThemeService from "@repo/services/theme";
+import FileService from "@repo/services/file";
+import AnalyticsService from "@repo/services/analytics";
+import TemplateService from "@repo/services/template";
 
-export const userService = new UserService();
+export const authService = new AuthService();
+export const formService = new FormService();
+export const responseService = new ResponseService();
+export const shareLinkService = new ShareLinkService();
+export const collaboratorService = new CollaboratorService();
+export const webhookService = new WebhookService();
+export const themeService = new ThemeService();
+export const fileService = new FileService();
+export const analyticsService = new AnalyticsService();
+export const templateService = new TemplateService();

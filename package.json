@@ -2,8 +2,9 @@
   "name": "form_builder",
   "private": true,
   "scripts": {
-    "build": "turbo run build",
-    "dev": "turbo run dev",
+    "clean:dotfiles": "sh ./cleanDotFile.sh .",
+    "build": "COPYFILE_DISABLE=1 bun run clean:dotfiles && turbo run build",
+    "dev": "COPYFILE_DISABLE=1 bun run clean:dotfiles && turbo run dev",
     "lint": "turbo run lint",
     "format": "prettier --write \"**/*.{ts,tsx,md}\"",
     "check-types": "turbo run check-types"

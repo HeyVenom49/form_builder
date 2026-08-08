@@ -1,11 +1,27 @@
 {
   "$schema": "https://turborepo.dev/schema.json",
   "ui": "tui",
+  "globalEnv": [
+    "NODE_ENV",
+    "EMAIL_PROVIDER",
+    "RESEND_API_KEY",
+    "EMAIL_FROM",
+    "APP_URL",
+    "CORS_ORIGIN",
+    "BASE_URL",
+    "PORT",
+    "DATABASE_URL"
+  ],
   "tasks": {
     "build": {
       "dependsOn": ["^build"],
       "inputs": ["$TURBO_DEFAULT$", ".env*"],
-      "outputs": [".next/**", "!.next/cache/**", "!.next/dev/**"]
+      "outputs": [
+        ".next/**",
+        "!.next/cache/**",
+        "!.next/dev/**",
+        "dist/**"
+      ]
     },
     "lint": {
       "dependsOn": ["^lint"]

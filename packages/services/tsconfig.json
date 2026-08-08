@@ -1,8 +1,5 @@
 {
   "extends": "@repo/typescript-config/node.json",
-  "compilerOptions": {
-    "types": ["node"]
-  },
   "include": ["**/*.ts", "eslint.config.js"],
   "exclude": ["node_modules"]
 }

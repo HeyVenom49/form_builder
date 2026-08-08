@@ -7,35 +7,41 @@ import React, { useState } from "react";
 import { trpc } from "../trpc/client";
 import { createHttpBatchLinkClientClient } from "../trpc/create-client";
 
-const queryClient = new QueryClient({
-  defaultOptions: {
-    queries: {
-      refetchOnMount: true,
-      staleTime: Infinity,
-    },
-  },
-});
-
 export const GlobalProviders: React.FC<{ children: React.ReactNode }> = ({
   children,
 }) => {
+  const [queryClient] = useState(
+    () =>
+      new QueryClient({
+        defaultOptions: {
+          queries: {
+            staleTime: 5 * 60_000,
+            gcTime: 30 * 60_000,
+            refetchOnWindowFocus: false,
+            refetchOnMount: false,
+            retry: 1,
+          },
+          mutations: {
+            retry: 0,
+          },
+        },
+      }),
+  );
   const [trpcClient] = useState(() =>
     trpc.createClient({
       links: [createHttpBatchLinkClientClient()],
     }),
   );
+
   return (
     <QueryClientProvider client={queryClient}>
       <NextThemesProvider
-        attribute='class'
-        defaultTheme='light'
+        attribute="class"
+        defaultTheme="light"
         enableSystem
         disableTransitionOnChange
       >
-        <trpc.Provider
-          queryClient={queryClient}
-          client={trpcClient}
-        >
+        <trpc.Provider queryClient={queryClient} client={trpcClient}>
           {children}
         </trpc.Provider>
       </NextThemesProvider>

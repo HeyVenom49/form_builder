@@ -13,25 +13,30 @@ import { apiReference } from "@scalar/express-api-reference";
 export const app = express();
 
 const openApiDocument = generateOpenApiDocument(serverRouter, {
-  title: "",
+  title: "Form Builder API",
   version: "1.0.0",
-  baseUrl: env.BASE_URL.concat("/api"),
+  baseUrl: `${env.BASE_URL}/api`,
 });
 
 app.use(cookieParser());
-app.use(cors({ origin: "*" }));
+app.use(
+  cors({
+    origin: env.CORS_ORIGIN,
+    credentials: true,
+  }),
+);
 app.use(express.json());
 
-app.get("/", (_, res) => {
-  return res.json({ message: "Form builder is up and running" });
+app.get("/", (_req, res) => {
+  res.json({ message: "Form builder is up and running" });
 });
 
-app.get("/health", (_, res) => {
-  return res.json({ message: "Form builder is healthy", healty: true });
+app.get("/health", (_req, res) => {
+  res.json({ message: "Form builder is healthy", healthy: true });
 });
 
-app.get("/openapi.json", (_, res) => {
-  return res.json(openApiDocument);
+app.get("/openapi.json", (_req, res) => {
+  res.json(openApiDocument);
 });
 
 app.get("/doc", apiReference({ url: "/openapi.json" }));
