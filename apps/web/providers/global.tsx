@@ -4,6 +4,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { ThemeProvider as NextThemesProvider } from "next-themes";
 import React, { useState } from "react";
 
+import { ClientErrorReporter } from "../components/logging/client-error-reporter";
 import { trpc } from "../trpc/client";
 import { createHttpBatchLinkClientClient } from "../trpc/create-client";
 
@@ -42,6 +43,7 @@ export const GlobalProviders: React.FC<{ children: React.ReactNode }> = ({
         disableTransitionOnChange
       >
         <trpc.Provider queryClient={queryClient} client={trpcClient}>
+          <ClientErrorReporter />
           {children}
         </trpc.Provider>
       </NextThemesProvider>

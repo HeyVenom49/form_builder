@@ -20,15 +20,19 @@ export function ThemeMiniature({
       type="button"
       onClick={onSelect}
       className={cn(
-        "group w-full overflow-hidden rounded-xl text-left transition-all duration-300",
+        "group w-full overflow-visible rounded-xl text-left transition-all duration-300",
         selected
           ? "ring-2 ring-[var(--atelier-accent)] ring-offset-2 ring-offset-[var(--atelier-bg)]"
           : "hover:-translate-y-0.5",
       )}
     >
-      <MiniatureSurface theme={theme} title={formTitle} />
-      <div className="bg-white px-3 py-2.5">
-        <p className="text-sm font-medium tracking-tight">{theme.name}</p>
+      <div className="overflow-hidden rounded-xl bg-white shadow-[inset_0_0_0_1px_var(--atelier-line)]">
+        <MiniatureSurface theme={theme} title={formTitle} />
+        <div className="px-3 py-2.5">
+          <p className="text-sm font-medium tracking-tight text-[var(--atelier-ink)]">
+            {theme.name}
+          </p>
+        </div>
       </div>
     </button>
   );
@@ -41,69 +45,90 @@ export function MiniatureSurface({
   theme: FormTheme;
   title: string;
 }) {
-  const pad =
-    theme.density === "airy"
-      ? "p-4"
-      : theme.density === "compact"
-        ? "p-2.5"
-        : "p-3";
+  // Paint at ~2× size, then scale down so serif display glyphs aren't clipped.
+  const scale = 0.5;
 
   return (
     <div
-      className={cn("aspect-[4/3] w-full", pad)}
+      className="relative aspect-[4/3] w-full overflow-hidden"
       style={{ background: theme.background }}
     >
       <div
-        className="flex h-full flex-col rounded-[inherit] px-3 py-3"
+        className="origin-top-left"
         style={{
-          background: theme.surface,
-          color: theme.text,
-          borderRadius: theme.radius,
-          boxShadow: theme.shadow === "none" ? undefined : theme.shadow,
+          width: `${100 / scale}%`,
+          height: `${100 / scale}%`,
+          transform: `scale(${scale})`,
+          padding: 14,
         }}
       >
-        <p
-          className="truncate text-[11px] leading-tight"
-          style={{ fontFamily: theme.fontDisplay }}
-        >
-          {title}
-        </p>
-        <p className="mt-0.5 truncate text-[8px]" style={{ color: theme.textMuted }}>
-          A short description
-        </p>
         <div
-          className="mt-2.5 h-5 rounded"
+          className="flex h-full min-h-0 flex-col px-4 py-4"
           style={{
-            background: theme.inputBg,
-            boxShadow: `inset 0 0 0 1px ${theme.border}`,
-            borderRadius: `calc(${theme.radius} * 0.6)`,
-          }}
-        />
-        <div
-          className="mt-1.5 h-5 rounded"
-          style={{
-            background: theme.inputBg,
-            boxShadow: `inset 0 0 0 1px ${theme.border}`,
-            borderRadius: `calc(${theme.radius} * 0.6)`,
-          }}
-        />
-        <div
-          className="mt-auto h-5 w-14"
-          style={{
-            background:
-              theme.buttonStyle === "outline" ? "transparent" : theme.primary,
-            color: theme.primaryText,
+            background: theme.surface,
+            color: theme.text,
             borderRadius: theme.radius,
-            boxShadow:
-              theme.buttonStyle === "outline"
-                ? `inset 0 0 0 1.5px ${theme.primary}`
-                : theme.buttonStyle === "soft"
-                  ? undefined
-                  : undefined,
-            opacity: theme.buttonStyle === "soft" ? 0.85 : 1,
+            boxShadow: theme.shadow === "none" ? undefined : theme.shadow,
           }}
-        />
+        >
+          <p
+            className="shrink-0 truncate text-[20px] leading-snug"
+            style={{
+              fontFamily: theme.fontDisplay,
+              color: theme.text,
+            }}
+          >
+            {title}
+          </p>
+          <p
+            className="mt-1 shrink-0 truncate text-[13px] leading-normal"
+            style={{
+              fontFamily: theme.fontBody,
+              color: theme.textMuted,
+            }}
+          >
+            A short description
+          </p>
+          <div
+            className="mt-4 h-8 min-h-0 flex-1 rounded"
+            style={{
+              background: theme.inputBg,
+              boxShadow: `inset 0 0 0 1px ${theme.border}`,
+              borderRadius: `calc(${theme.radius} * 0.6)`,
+              maxHeight: 36,
+            }}
+          />
+          <div
+            className="mt-2 h-8 min-h-0 flex-1 rounded"
+            style={{
+              background: theme.inputBg,
+              boxShadow: `inset 0 0 0 1px ${theme.border}`,
+              borderRadius: `calc(${theme.radius} * 0.6)`,
+              maxHeight: 36,
+            }}
+          />
+          <div
+            className="mt-3 flex h-9 w-28 shrink-0 items-center justify-center text-[13px] font-medium"
+            style={{
+              background:
+                theme.buttonStyle === "outline" ? "transparent" : theme.primary,
+              color:
+                theme.buttonStyle === "outline"
+                  ? theme.primary
+                  : theme.primaryText,
+              borderRadius: theme.radius,
+              boxShadow:
+                theme.buttonStyle === "outline"
+                  ? `inset 0 0 0 1.5px ${theme.primary}`
+                  : undefined,
+              opacity: theme.buttonStyle === "soft" ? 0.85 : 1,
+            }}
+          >
+            Continue
+          </div>
+        </div>
       </div>
     </div>
   );
 }
+

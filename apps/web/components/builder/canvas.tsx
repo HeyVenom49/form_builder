@@ -1,15 +1,17 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { motion } from "framer-motion";
 import {
-  DndContext,
   closestCenter,
+  DndContext,
   KeyboardSensor,
   PointerSensor,
+  useDroppable,
   useSensor,
   useSensors,
   type DragEndEvent,
+  type DragOverEvent,
 } from "@dnd-kit/core";
 import {
   SortableContext,
@@ -18,7 +20,7 @@ import {
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { GripVertical, Plus, Trash2 } from "lucide-react";
+import { GripVertical, Trash2 } from "lucide-react";
 
 import type { AtelierFormView, AtelierQuestion } from "../../lib/form-mapper";
 import {
@@ -27,21 +29,16 @@ import {
   needsOptions,
 } from "../../lib/question-types";
 import { cn } from "../../lib/utils";
+import {
+  gapDragId,
+  indexFromGapDragId,
+  isGapDragId,
+  isPaletteDragId,
+  resolveDropIndex,
+  typeFromPaletteDragId,
+} from "./dnd-ids";
 
-export function BuilderCanvas({
-  form,
-  selectedQuestionId,
-  onSelect,
-  onUpdateQuestion,
-  onUpdateForm,
-  onPersistForm,
-  onAdd,
-  onRemove,
-  onReorder,
-  onUpdateOption,
-  onAddOption,
-  onRemoveOption,
-}: {
+export type BuilderCanvasProps = {
   form: AtelierFormView;
   selectedQuestionId: string | null;
   onSelect: (id: string | null) => void;
@@ -58,14 +55,36 @@ export function BuilderCanvas({
   ) => void;
   onUpdateForm: (patch: { title?: string; description?: string }) => void;
   onPersistForm?: (patch: { title?: string; description?: string }) => void;
-  onAdd: (type?: string) => void;
+  onAdd: (type?: string, index?: number) => void;
   onRemove: (questionId: string) => void;
   onReorder: (orderedIds: string[]) => void;
   onUpdateOption: (optionId: string, label: string) => void;
   onAddOption: (questionId: string, label: string) => void;
   onRemoveOption: (optionId: string) => void;
-}) {
-  const [pickerOpen, setPickerOpen] = useState(false);
+  /** When true, parent owns DndContext (palette + canvas). */
+  embedded?: boolean;
+  activeGapIndex?: number | null;
+  pulseThreadIndex?: number | null;
+};
+
+export function BuilderCanvas({
+  form,
+  selectedQuestionId,
+  onSelect,
+  onUpdateQuestion,
+  onUpdateForm,
+  onPersistForm,
+  onAdd,
+  onRemove,
+  onReorder,
+  onUpdateOption,
+  onAddOption,
+  onRemoveOption,
+  embedded = false,
+  activeGapIndex = null,
+  pulseThreadIndex = null,
+}: BuilderCanvasProps) {
+  const [localGap, setLocalGap] = useState<number | null>(null);
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
     useSensor(KeyboardSensor, {
@@ -73,32 +92,110 @@ export function BuilderCanvas({
     }),
   );
 
-  const groups = useMemo(() => {
-    const map = new Map<string, (typeof QUESTION_TYPES)[number][]>();
-    for (const t of QUESTION_TYPES) {
-      const list = map.get(t.group) ?? [];
-      list.push(t);
-      map.set(t.group, list);
-    }
-    return [...map.entries()];
-  }, []);
-
   const questionIds = useMemo(
     () => form.questions.map((q) => q.id),
     [form.questions],
   );
 
-  function onDragEnd(event: DragEndEvent) {
+  const gapHighlight = embedded ? activeGapIndex : localGap;
+  const seenIdsRef = useRef<Set<string>>(new Set(questionIds));
+
+  function handleDragOver(event: DragOverEvent) {
+    if (embedded) return;
     const { active, over } = event;
-    if (!over || active.id === over.id) return;
-    const oldIndex = questionIds.indexOf(String(active.id));
-    const newIndex = questionIds.indexOf(String(over.id));
-    if (oldIndex < 0 || newIndex < 0) return;
+    if (!over) {
+      setLocalGap(null);
+      return;
+    }
+    if (isPaletteDragId(active.id) || isGapDragId(over.id)) {
+      const idx = resolveDropIndex(
+        String(over.id),
+        String(active.id),
+        questionIds,
+      );
+      setLocalGap(idx);
+    } else {
+      setLocalGap(null);
+    }
+  }
+
+  function handleDragEnd(event: DragEndEvent) {
+    const { active, over } = event;
+    if (!embedded) setLocalGap(null);
+    if (!over) return;
+
+    if (isPaletteDragId(active.id)) {
+      const type = typeFromPaletteDragId(active.id);
+      const index =
+        resolveDropIndex(String(over.id), String(active.id), questionIds) ??
+        questionIds.length;
+      onAdd(type, index);
+      return;
+    }
+
+    const activeId = String(active.id);
+    const overId = String(over.id);
+    const oldIndex = questionIds.indexOf(activeId);
+    if (oldIndex < 0) return;
+
+    let newIndex: number;
+    if (isGapDragId(overId)) {
+      newIndex = indexFromGapDragId(overId);
+      if (oldIndex < newIndex) newIndex -= 1;
+    } else {
+      newIndex = questionIds.indexOf(overId);
+    }
+    if (newIndex < 0 || newIndex === oldIndex) return;
     const next = [...questionIds];
     const [moved] = next.splice(oldIndex, 1);
     next.splice(newIndex, 0, moved!);
     onReorder(next);
   }
+
+  const list = (
+    <SortableContext
+      items={questionIds}
+      strategy={verticalListSortingStrategy}
+    >
+      <div className="relative pl-6 sm:pl-8">
+        <div
+          className="pointer-events-none absolute top-6 bottom-6 left-[11px] w-px bg-[var(--atelier-line)] sm:left-[15px]"
+          aria-hidden
+        />
+        <DropGap index={0} active={gapHighlight === 0} />
+        {form.questions.map((q, index) => {
+          const isNew = !seenIdsRef.current.has(q.id);
+          if (isNew) seenIdsRef.current.add(q.id);
+          return (
+            <div key={q.id}>
+              <motion.div
+                initial={isNew ? { opacity: 0, y: 8 } : false}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
+              >
+                <SortableQuestion
+                  question={q}
+                  index={index}
+                  selected={selectedQuestionId === q.id}
+                  pulseThread={pulseThreadIndex === index}
+                  onSelect={() => onSelect(q.id)}
+                  onUpdate={(patch) => onUpdateQuestion(q.id, patch)}
+                  onRemove={() => onRemove(q.id)}
+                  onUpdateOption={onUpdateOption}
+                  onAddOption={onAddOption}
+                  onRemoveOption={onRemoveOption}
+                />
+              </motion.div>
+              <DropGap
+                index={index + 1}
+                active={gapHighlight === index + 1}
+              />
+            </div>
+          );
+        })}
+      </div>
+    </SortableContext>
+  );
 
   return (
     <div className="atelier-scroll mx-auto max-w-2xl px-4 py-10 sm:px-8">
@@ -126,98 +223,51 @@ export function BuilderCanvas({
         />
       </div>
 
-      <DndContext
-        sensors={sensors}
-        collisionDetection={closestCenter}
-        onDragEnd={onDragEnd}
-      >
-        <SortableContext
-          items={questionIds}
-          strategy={verticalListSortingStrategy}
+      {embedded ? (
+        list
+      ) : (
+        <DndContext
+          sensors={sensors}
+          collisionDetection={closestCenter}
+          onDragOver={handleDragOver}
+          onDragEnd={handleDragEnd}
+          onDragCancel={() => setLocalGap(null)}
         >
-          <div className="space-y-2">
-            {form.questions.map((q, index) => (
-              <SortableQuestion
-                key={q.id}
-                question={q}
-                index={index}
-                selected={selectedQuestionId === q.id}
-                onSelect={() => onSelect(q.id)}
-                onUpdate={(patch) => onUpdateQuestion(q.id, patch)}
-                onRemove={() => onRemove(q.id)}
-                onUpdateOption={onUpdateOption}
-                onAddOption={onAddOption}
-                onRemoveOption={onRemoveOption}
-              />
-            ))}
-          </div>
-        </SortableContext>
-      </DndContext>
+          {list}
+        </DndContext>
+      )}
+    </div>
+  );
+}
 
-      <div className="relative mt-8">
-        <div className="flex flex-wrap items-center gap-2">
-          <button
-            type="button"
-            onClick={() => setPickerOpen((o) => !o)}
-            className="inline-flex h-11 items-center gap-2 rounded-full bg-white px-4 text-sm font-medium shadow-[inset_0_0_0_1px_var(--atelier-line)]"
-          >
-            <Plus className="h-4 w-4" />
-            Add question
-          </button>
-          {QUESTION_TYPES.slice(0, 6).map((t) => {
-            const Icon = t.icon;
-            return (
-              <button
-                key={t.type}
-                type="button"
-                onClick={() => onAdd(t.type)}
-                title={t.label}
-                className="flex h-11 w-11 items-center justify-center rounded-full text-[var(--atelier-ink-muted)] hover:bg-white"
-              >
-                <Icon className="h-4 w-4" />
-              </button>
-            );
-          })}
-        </div>
+function DropGap({ index, active }: { index: number; active: boolean }) {
+  const { setNodeRef, isOver } = useDroppable({ id: gapDragId(index) });
+  const lit = active || isOver;
 
-        <AnimatePresence>
-          {pickerOpen && (
-            <motion.div
-              initial={{ opacity: 0, y: 8 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: 8 }}
-              className="absolute z-20 mt-3 max-h-80 w-full overflow-auto rounded-2xl bg-white p-4 shadow-[var(--atelier-shadow)] sm:max-w-lg"
-            >
-              {groups.map(([group, items]) => (
-                <div key={group} className="mb-4 last:mb-0">
-                  <p className="mb-2 text-xs tracking-[0.12em] text-[var(--atelier-ink-muted)] uppercase">
-                    {group}
-                  </p>
-                  <div className="grid grid-cols-2 gap-1">
-                    {items.map((t) => {
-                      const Icon = t.icon;
-                      return (
-                        <button
-                          key={t.type}
-                          type="button"
-                          onClick={() => {
-                            onAdd(t.type);
-                            setPickerOpen(false);
-                          }}
-                          className="flex items-center gap-2 rounded-xl px-3 py-2.5 text-left text-sm hover:bg-[var(--atelier-bg)]"
-                        >
-                          <Icon className="h-4 w-4 text-[var(--atelier-ink-muted)]" />
-                          {t.label}
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-              ))}
-            </motion.div>
-          )}
-        </AnimatePresence>
-      </div>
+  return (
+    <div
+      ref={setNodeRef}
+      className={cn(
+        "relative flex items-center justify-center transition-all duration-150",
+        lit ? "h-8 py-1" : "h-2",
+      )}
+    >
+      <motion.div
+        initial={false}
+        animate={{
+          scaleX: lit ? 1 : 0.4,
+          opacity: lit ? 1 : 0,
+        }}
+        transition={{ duration: 0.15 }}
+        className="h-0.5 w-full origin-center rounded-full bg-[var(--atelier-accent)]"
+      />
+      {lit && (
+        <motion.span
+          initial={{ scale: 0 }}
+          animate={{ scale: 1 }}
+          className="absolute left-0 h-2.5 w-2.5 -translate-x-1 rounded-full bg-[var(--atelier-accent)]"
+        />
+      )}
     </div>
   );
 }
@@ -226,6 +276,7 @@ function SortableQuestion({
   question,
   index,
   selected,
+  pulseThread,
   onSelect,
   onUpdate,
   onRemove,
@@ -236,6 +287,7 @@ function SortableQuestion({
   question: AtelierQuestion;
   index: number;
   selected: boolean;
+  pulseThread?: boolean;
   onSelect: () => void;
   onUpdate: (patch: {
     title?: string;
@@ -286,6 +338,20 @@ function SortableQuestion({
       style={style}
       className={cn("group relative", isDragging && "z-20 opacity-90")}
     >
+      <motion.span
+        aria-hidden
+        animate={{
+          scale: pulseThread ? 1.4 : 1,
+          backgroundColor: pulseThread
+            ? "var(--atelier-accent)"
+            : "var(--atelier-bg)",
+          borderColor: pulseThread
+            ? "var(--atelier-accent)"
+            : "var(--atelier-line-strong)",
+        }}
+        transition={{ duration: 0.22 }}
+        className="absolute top-7 -left-[19px] z-[1] h-2.5 w-2.5 rounded-full border sm:-left-[21px]"
+      />
       <div
         role="button"
         tabIndex={0}
@@ -621,14 +687,16 @@ function GhostField({ question }: { question: AtelierQuestion }) {
   if (needsOptions(question.type)) {
     return (
       <div className="space-y-2">
-        {(question.optionLabels || ["Option A", "Option B"]).slice(0, 3).map((o) => (
-          <div
-            key={o}
-            className="rounded-xl px-3 py-2.5 text-sm shadow-[inset_0_0_0_1px_var(--atelier-line)]"
-          >
-            {o}
-          </div>
-        ))}
+        {(question.optionLabels || ["Option A", "Option B"])
+          .slice(0, 3)
+          .map((o) => (
+            <div
+              key={o}
+              className="rounded-xl px-3 py-2.5 text-sm shadow-[inset_0_0_0_1px_var(--atelier-line)]"
+            >
+              {o}
+            </div>
+          ))}
       </div>
     );
   }

@@ -58,7 +58,7 @@ export function QualityPanel({
 }) {
   const { score, suggestions } = computeQuality(form);
   return (
-    <div className="atelier-scroll h-full overflow-auto p-5">
+    <div className="atelier-scroll min-h-0 flex-1 overflow-y-auto overscroll-contain p-5 pb-10">
       <h2 className="font-display text-2xl tracking-tight">Ready to share?</h2>
       <div className="mt-8 flex items-end gap-3">
         <motion.span
@@ -161,7 +161,7 @@ export function PresentationSettings({
   }
 
   return (
-    <div className="atelier-scroll h-full overflow-auto p-5">
+    <div className="atelier-scroll min-h-0 flex-1 overflow-y-auto overscroll-contain p-5 pb-10">
       <h2 className="font-display text-2xl tracking-tight">Presentation</h2>
       <div className="mt-6 space-y-2">
         {(

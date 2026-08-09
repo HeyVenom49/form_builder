@@ -33,6 +33,9 @@ import {
 } from "../lib/question-types";
 import { useBuilderUi } from "../stores/builder-ui";
 import { trpc } from "../trpc/client";
+import type { FormDetail, RouterOutput } from "../types/api";
+
+type ShareLinkRow = RouterOutput["shareLink"]["listShareLinks"][number];
 
 export function useAtelierForm(formId: string) {
   const { form, isLoading, error, isFetched } = useForm({ id: formId });
@@ -60,9 +63,17 @@ export function useAtelierForm(formId: string) {
   async function patchMeta(patch: Partial<AtelierMeta>) {
     if (!view) return;
     const meta = { ...view.meta, ...patch };
+    const responseMessage = packResponseMessage(meta, view.thankYouBody);
+    utils.form.getFormById.setData({ id: formId }, (old: FormDetail | undefined) => {
+      if (!old?.settings) return old;
+      return {
+        ...old,
+        settings: { ...old.settings, responseMessage },
+      };
+    });
     await updateFormSettingsAsync({
       formId,
-      responseMessage: packResponseMessage(meta, view.thankYouBody),
+      responseMessage,
     });
     pulseSaved();
   }
@@ -138,7 +149,7 @@ export function useAtelierForm(formId: string) {
     publish: async () => {
       await setFormStatusAsync({ id: formId, status: "PUBLISHED" });
       const links = await utils.shareLink.listShareLinks.fetch({ formId });
-      const active = links.find((l) => l.isActive);
+      const active = links.find((l: ShareLinkRow) => l.isActive);
       if (!active) {
         await createShareLinkAsync({ formId });
       }
@@ -147,7 +158,7 @@ export function useAtelierForm(formId: string) {
 
     copyPublicLink: async () => {
       const links = await utils.shareLink.listShareLinks.fetch({ formId });
-      let slug = links.find((l) => l.isActive)?.slug;
+      let slug = links.find((l: ShareLinkRow) => l.isActive)?.slug;
       if (!slug) {
         const created = await createShareLinkAsync({ formId });
         slug = created.slug;
@@ -157,16 +168,20 @@ export function useAtelierForm(formId: string) {
       return url;
     },
 
-    addQuestion: async (type = "SHORT_TEXT") => {
+    addQuestion: async (type = "SHORT_TEXT", index?: number) => {
       if (!view?.sectionId) return;
       const optionsNeeded = needsOptions(type);
       const settings = defaultSettingsForType(type);
-      await createQuestionAsync({
+      const insertAt =
+        index === undefined
+          ? view.questions.length
+          : Math.max(0, Math.min(index, view.questions.length));
+      const created = await createQuestionAsync({
         sectionId: view.sectionId,
         title: "New question",
         type: type as never,
         required: false,
-        displayOrder: view.questions.length,
+        displayOrder: insertAt,
         settings: settings ?? undefined,
         options: optionsNeeded
           ? ["Option A", "Option B", "Option C"].map((label, displayOrder) => ({
@@ -176,6 +191,19 @@ export function useAtelierForm(formId: string) {
             }))
           : undefined,
       });
+      const existingIds = view.questions.map((q) => q.id);
+      const orderedIds = [
+        ...existingIds.slice(0, insertAt),
+        created.id,
+        ...existingIds.slice(insertAt),
+      ];
+      if (insertAt < existingIds.length) {
+        await reorderQuestionsAsync({
+          sectionId: view.sectionId,
+          orderedIds,
+        });
+      }
+      useBuilderUi.getState().selectQuestion(created.id);
       pulseSaved();
     },
 

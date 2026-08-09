@@ -134,3 +134,47 @@ select {
   background: rgba(20, 20, 20, 0.12);
   border-radius: 999px;
 }
+
+.landing-page {
+  scroll-behavior: smooth;
+  background-color: var(--atelier-bg);
+  background-image:
+    radial-gradient(ellipse 90% 55% at 50% -8%, rgba(27, 107, 90, 0.06), transparent 55%),
+    radial-gradient(ellipse 50% 40% at 100% 18%, rgba(180, 83, 9, 0.04), transparent 50%),
+    linear-gradient(180deg, #f8f7f4 0%, var(--atelier-bg) 28%, #f3f2ee 72%, var(--atelier-bg) 100%);
+  background-attachment: local;
+}
+
+.landing-container {
+  width: 100%;
+  max-width: 72rem;
+  margin-inline: auto;
+  padding-inline: 1.25rem;
+}
+
+@media (min-width: 640px) {
+  .landing-container {
+    padding-inline: 2rem;
+  }
+}
+
+.landing-reveal {
+  animation: fade-up 0.7s var(--atelier-ease) both;
+  animation-delay: 0.12s;
+}
+
+.landing-theme-swap {
+  animation: fade-up 0.45s var(--atelier-ease) both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .landing-page {
+    scroll-behavior: auto;
+  }
+
+  .landing-reveal,
+  .landing-theme-swap,
+  .animate-fade-up {
+    animation: none !important;
+  }
+}

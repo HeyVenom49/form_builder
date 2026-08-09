@@ -19,10 +19,11 @@ const display = Instrument_Serif({
 
 export const metadata: Metadata = {
   title: {
-    default: "Atelier",
+    default: "Atelier — Forms people actually want to fill out",
     template: "%s · Atelier",
   },
-  description: "Design experiences people love to answer.",
+  description:
+    "Create beautiful forms that feel like part of your brand, not another boring questionnaire.",
 };
 
 export default function RootLayout({

@@ -6,6 +6,7 @@ import { usePathname } from "next/navigation";
 import { cn } from "../../lib/utils";
 import { useLogout, useUser } from "../../hook/api/auth";
 import { Button } from "../ui/button";
+import { UserMenu } from "./user-menu";
 
 export function AppChrome({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
@@ -47,22 +48,17 @@ export function AppChrome({ children }: { children: React.ReactNode }) {
               })}
             </nav>
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 sm:gap-3">
+            <Link href="/create">
+              <Button size="sm">New experience</Button>
+            </Link>
             {user ? (
-              <>
-                <span className="hidden text-sm text-[var(--atelier-ink-muted)] sm:inline">
-                  {user.name || user.email}
-                </span>
-                <Link
-                  href="/auth/account"
-                  className="hidden text-sm text-[var(--atelier-ink-muted)] hover:text-[var(--atelier-ink)] sm:inline"
-                >
-                  Account
-                </Link>
-                <Button variant="ghost" size="sm" onClick={() => logout()}>
-                  Sign out
-                </Button>
-              </>
+              <UserMenu
+                name={user.name}
+                email={user.email}
+                username={user.username}
+                onSignOut={() => logout()}
+              />
             ) : (
               <Link href="/auth/signin">
                 <Button variant="secondary" size="sm">
@@ -70,9 +66,6 @@ export function AppChrome({ children }: { children: React.ReactNode }) {
                 </Button>
               </Link>
             )}
-            <Link href="/create">
-              <Button size="sm">New experience</Button>
-            </Link>
           </div>
         </div>
       </header>

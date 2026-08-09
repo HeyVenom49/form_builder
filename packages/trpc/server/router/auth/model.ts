@@ -21,6 +21,8 @@ export const meOutput = z.object({
   emailVerifiedAt: z.coerce.date().nullable(),
 });
 
+export const meQueryOutput = meOutput.nullable();
+
 export const createUserWithEmailAndPasswordInput = z.object({
   name: z
     .string()

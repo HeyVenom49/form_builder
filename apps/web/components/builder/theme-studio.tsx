@@ -14,12 +14,12 @@ export function ThemeStudio({
   onTheme: (id: ThemeId) => void;
 }) {
   return (
-    <div className="atelier-scroll h-full overflow-auto p-5">
+    <div className="atelier-scroll min-h-0 flex-1 overflow-y-auto overscroll-contain p-5 pb-10">
       <h2 className="font-display text-2xl tracking-tight">Theme Studio</h2>
       <p className="mt-1 text-sm text-[var(--atelier-ink-muted)]">
         Applies a real theme record and assigns it to this form.
       </p>
-      <div className="mt-6 grid grid-cols-2 gap-3">
+      <div className="mt-6 grid grid-cols-1 gap-3 sm:grid-cols-2">
         {(Object.keys(themes) as ThemeId[]).map((id) => (
           <ThemeMiniature
             key={id}
@@ -42,7 +42,7 @@ export function PersonalityMode({
   onPersonality: (id: AtelierMeta["personalityId"]) => void;
 }) {
   return (
-    <div className="atelier-scroll h-full overflow-auto p-5">
+    <div className="atelier-scroll min-h-0 flex-1 overflow-y-auto overscroll-contain p-5 pb-10">
       <h2 className="font-display text-2xl tracking-tight">
         What feeling should your form create?
       </h2>
@@ -66,9 +66,9 @@ export function PersonalityMode({
                     background: `linear-gradient(145deg, ${theme.background}, ${theme.primary}55)`,
                   }}
                 />
-                <span>
+                <span className="min-w-0">
                   <span className="block font-medium">{p.label}</span>
-                  <span className="text-sm text-[var(--atelier-ink-muted)]">
+                  <span className="block text-sm text-[var(--atelier-ink-muted)]">
                     {p.description}
                   </span>
                 </span>

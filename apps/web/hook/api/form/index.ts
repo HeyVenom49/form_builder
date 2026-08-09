@@ -104,6 +104,7 @@ export const useUpdateFormSettings = () => {
   const mutation = trpc.form.updateFormSettings.useMutation({
     onSuccess: async (data) => {
       await utils.form.getFormById.invalidate({ id: data.formId });
+      await utils.form.getFormById.refetch({ id: data.formId });
     },
   });
 
@@ -254,6 +255,7 @@ export const useCreateQuestion = () => {
   const mutation = trpc.form.createQuestion.useMutation({
     onSuccess: async (data) => {
       await utils.form.getFormById.invalidate({ id: data.formId });
+      await utils.form.getFormById.refetch({ id: data.formId });
     },
   });
 
@@ -275,6 +277,7 @@ export const useUpdateQuestion = () => {
   const mutation = trpc.form.updateQuestion.useMutation({
     onSuccess: async (data) => {
       await utils.form.getFormById.invalidate({ id: data.formId });
+      await utils.form.getFormById.refetch({ id: data.formId });
     },
   });
 
@@ -320,6 +323,7 @@ export const useReorderQuestions = () => {
   const mutation = trpc.form.reorderQuestions.useMutation({
     onSuccess: async () => {
       await utils.form.getFormById.invalidate();
+      await utils.form.getFormById.refetch();
     },
   });
 

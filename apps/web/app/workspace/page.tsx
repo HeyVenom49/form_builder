@@ -8,6 +8,7 @@ import { motion } from "framer-motion";
 import { Trash2 } from "lucide-react";
 
 import { AppChrome } from "../../components/layout/app-chrome";
+import { firstName } from "../../components/layout/user-menu";
 import { IntentIllustration } from "../../components/illustrations/intent";
 import { Button } from "../../components/ui/button";
 import { Skeleton } from "../../components/ui/skeleton";
@@ -134,10 +135,14 @@ export default function WorkspacePage() {
               Workspace
             </p>
             <h1 className="mt-2 font-display text-4xl tracking-tight sm:text-5xl">
-              Your experiences
+              {user
+                ? `Welcome back, ${firstName(user.name, user.email)}`
+                : "Your experiences"}
             </h1>
             <p className="mt-2 max-w-lg text-[var(--atelier-ink-soft)]">
-              Synced with your Atelier account.
+              {user?.username
+                ? `@${user.username} · your forms, invites, and shared work.`
+                : "Your forms, invites, and shared work — all in one place."}
             </p>
           </div>
           <Link href="/create">

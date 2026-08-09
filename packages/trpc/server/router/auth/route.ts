@@ -20,6 +20,7 @@ import {
   loginWithEmailAndPasswordOutput,
   logoutOutput,
   meOutput,
+  meQueryOutput,
   requestEmailVerificationOutput,
   requestPasswordResetInput,
   requestPasswordResetOutput,
@@ -123,23 +124,19 @@ export const authRouter = router({
       return { ok: true as const };
     }),
 
-  me: protectedProcedure
+  me: publicProcedure
     .meta({
       openapi: {
         method: "GET",
         path: "/auth/me",
         tags: ["auth"],
-        summary: "Get the current authenticated user",
-        protect: true,
+        summary: "Get the current authenticated user, or null if signed out",
       },
     })
-    .output(meOutput)
+    .output(meQueryOutput)
     .query(async ({ ctx }) => {
-      const user = await authService.getMe(ctx.userId);
-      if (!user) {
-        throw new TRPCError({ code: "UNAUTHORIZED" });
-      }
-      return user;
+      if (!ctx.userId) return null;
+      return (await authService.getMe(ctx.userId)) ?? null;
     }),
 
   changePassword: protectedProcedure

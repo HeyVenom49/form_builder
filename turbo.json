@@ -10,7 +10,10 @@
     "CORS_ORIGIN",
     "BASE_URL",
     "PORT",
-    "DATABASE_URL"
+    "DATABASE_URL",
+    "LOGGER_PORT",
+    "NEXT_PUBLIC_LOGGER_URL",
+    "NEXT_PUBLIC_API_URL"
   ],
   "tasks": {
     "build": {

@@ -7,8 +7,15 @@ import { serverRouter, createContext } from "@repo/trpc/server";
 import cors from "cors";
 import * as trpcExpress from "@trpc/server/adapters/express";
 import cookieParser from "cookie-parser";
+import {
+  errorLoggingMiddleware,
+  installProcessHandlers,
+  requestLoggingMiddleware,
+} from "@repo/logger/middleware";
 import { env } from "./env";
 import { apiReference } from "@scalar/express-api-reference";
+
+installProcessHandlers("api");
 
 export const app = express();
 
@@ -25,7 +32,8 @@ app.use(
     credentials: true,
   }),
 );
-app.use(express.json());
+app.use(express.json({ limit: "2mb" }));
+app.use(requestLoggingMiddleware());
 
 app.get("/", (_req, res) => {
   res.json({ message: "Form builder is up and running" });
@@ -56,3 +64,5 @@ app.use(
     createContext,
   }),
 );
+
+app.use(errorLoggingMiddleware());

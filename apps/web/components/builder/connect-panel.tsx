@@ -26,7 +26,6 @@ import {
   useWebhookDeliveries,
   useRetryWebhookDelivery,
 } from "../../hook/api/webhook";
-import { useUpdateFormSettings } from "../../hook/api/form";
 import {
   useCreateLogicRule,
   useDeleteLogicRule,
@@ -37,14 +36,14 @@ import type { AtelierFormView } from "../../lib/form-mapper";
 
 export function ConnectPanel({ form }: { form: AtelierFormView }) {
   const [tab, setTab] = useState<
-    "share" | "people" | "webhooks" | "settings" | "logic" | "files" | "template"
+    "share" | "people" | "webhooks" | "logic" | "files" | "template"
   >("share");
 
   return (
-    <div className="atelier-scroll h-full overflow-auto p-5">
+    <div className="atelier-scroll min-h-0 flex-1 overflow-y-auto overscroll-contain p-5 pb-10">
       <h2 className="font-display text-2xl tracking-tight">Connect</h2>
       <p className="mt-1 text-sm text-[var(--atelier-ink-muted)]">
-        Share links, people, webhooks, settings — all live on the API.
+        Share links, people, webhooks, and more.
       </p>
       <div className="mt-4 flex flex-wrap gap-1">
         {(
@@ -52,7 +51,6 @@ export function ConnectPanel({ form }: { form: AtelierFormView }) {
             ["share", "Share"],
             ["people", "People"],
             ["webhooks", "Webhooks"],
-            ["settings", "Settings"],
             ["logic", "Logic"],
             ["files", "Files"],
             ["template", "Template"],
@@ -76,7 +74,6 @@ export function ConnectPanel({ form }: { form: AtelierFormView }) {
         {tab === "share" && <ShareTab formId={form.id} />}
         {tab === "people" && <PeopleTab formId={form.id} />}
         {tab === "webhooks" && <WebhooksTab formId={form.id} />}
-        {tab === "settings" && <SettingsTab form={form} />}
         {tab === "logic" && <LogicTab form={form} />}
         {tab === "files" && <FilesTab formId={form.id} />}
         {tab === "template" && <TemplateTab formId={form.id} title={form.title} />}
@@ -344,72 +341,6 @@ function WebhooksTab({ formId }: { formId: string }) {
           </ul>
         </div>
       )}
-    </div>
-  );
-}
-
-function SettingsTab({ form }: { form: AtelierFormView }) {
-  const { updateFormSettingsAsync } = useUpdateFormSettings();
-  const s = form.settings;
-  if (!s) return <p className="text-sm">No settings yet.</p>;
-
-  return (
-    <div className="space-y-3 text-sm">
-      {(
-        [
-          ["showProgressBar", "Show progress"],
-          ["showQuestionNumbers", "Question numbers"],
-          ["collectEmail", "Collect email"],
-          ["requireLogin", "Require login"],
-          ["allowMultipleResponses", "Allow multiple"],
-          ["acceptResponses", "Accept responses"],
-          ["allowEditAfterSubmit", "Edit after submit"],
-          ["shuffleQuestions", "Shuffle questions"],
-        ] as const
-      ).map(([key, label]) => (
-        <label key={key} className="flex items-center justify-between gap-3">
-          <span>{label}</span>
-          <input
-            type="checkbox"
-            checked={Boolean(s[key])}
-            onChange={(e) =>
-              updateFormSettingsAsync({
-                formId: form.id,
-                [key]: e.target.checked,
-              })
-            }
-          />
-        </label>
-      ))}
-      <label className="block">
-        Max responses
-        <Input
-          type="number"
-          className="mt-1"
-          defaultValue={s.maxResponses ?? undefined}
-          onBlur={(e) =>
-            updateFormSettingsAsync({
-              formId: form.id,
-              maxResponses: e.target.value
-                ? Number(e.target.value)
-                : null,
-            })
-          }
-        />
-      </label>
-      <label className="block">
-        Redirect URL
-        <Input
-          className="mt-1"
-          defaultValue={s.redirectUrl ?? ""}
-          onBlur={(e) =>
-            updateFormSettingsAsync({
-              formId: form.id,
-              redirectUrl: e.target.value || null,
-            })
-          }
-        />
-      </label>
     </div>
   );
 }
